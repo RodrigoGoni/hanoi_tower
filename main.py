@@ -116,7 +116,18 @@ def define_problem() -> ProblemHanoi:
         return None
     # Create the initial state instance
     initial_state = StatesHanoi(peg_1, peg_2, peg_3, max_disks=5)
-    goal_state = StatesHanoi([], [], [5, 4, 3, 2, 1], max_disks=5)
+    with open("simulator/goal_state.json", "r") as f:
+        goal_state_data = json.load(f)
+    peg_1 = goal_state_data.get("peg_1", [])
+    peg_2 = goal_state_data.get("peg_2", [])
+    peg_3 = goal_state_data.get("peg_3", [])
+    if is_valid_hanoi_state(peg_1, peg_2, peg_3, max_disks=5):
+        print("Goal state is valid.")
+    else:
+        print("Goal state is invalid.")
+        return None
+    goal_state = StatesHanoi(peg_1, peg_2, peg_3, max_disks=5)
+
 
     problem = ProblemHanoi(initial=initial_state, goal=goal_state)
     return problem
