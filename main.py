@@ -4,19 +4,23 @@ import json
 import itertools
 counter = itertools.count()
 
+
 def my_search_algorithms(problem):
     abierta = []
-    costo = problem.path_cost(problem.initial,problem.actions(problem.initial)[0]) + hanoi_heuristic(problem.initial, problem.goal)
+    costo = problem.path_cost(problem.initial, problem.actions(problem.initial)[
+                              0]) + hanoi_heuristic(problem.initial, problem.goal)
     movimientos_iniciales = []
-    heapq.heappush(abierta, (costo,next(counter), problem.initial, movimientos_iniciales))
-    
+    heapq.heappush(abierta, (costo, next(counter),
+                   problem.initial, movimientos_iniciales))
     cerrada = set()
+
     while abierta:
-        costo,_, actual, movimientos = heapq.heappop(abierta)
+        costo, _, actual, movimientos = heapq.heappop(abierta)
         print(f"Evaluating state: {actual}")
-        if actual==problem.goal:
+        if actual == problem.goal:
             return actual, movimientos
         cerrada.add(actual)
+
         for accion in problem.actions(actual):
             nuevo_movimiento = {
                 "type": "movement",
@@ -27,11 +31,13 @@ def my_search_algorithms(problem):
             print(f"Evaluating action: {accion}")
             nuevo_estado = problem.result(actual, accion)
             nuevos_movimientos = movimientos + [nuevo_movimiento]
-            
+
             if nuevo_estado not in cerrada:
-                costo = problem.path_cost(actual,accion) + hanoi_heuristic(nuevo_estado,goal_state=problem.goal)
+                costo = problem.path_cost(
+                    actual, accion) + hanoi_heuristic(nuevo_estado, goal_state=problem.goal)
                 print(f"New cost: {costo}")
-                heapq.heappush(abierta, (costo,next(counter), nuevo_estado, nuevos_movimientos))
+                heapq.heappush(abierta, (costo, next(counter),
+                               nuevo_estado, nuevos_movimientos))
 
 
 def hanoi_heuristic(current_state: StatesHanoi, goal_state: StatesHanoi) -> int:
@@ -59,6 +65,7 @@ def define_problem():
     problem = ProblemHanoi(initial=initial_state, goal=goal_state)
     return problem
 
+
 def run_search(problem, algorithm):
     solution, movimientos = algorithm(problem)
     with open("movimientos.json", "w") as f:
@@ -72,6 +79,7 @@ def run_search(problem, algorithm):
 
     else:
         print(f"❌ No solution found using {algorithm.__name__}")
+
 
 if __name__ == '__main__':
     problem = define_problem()
