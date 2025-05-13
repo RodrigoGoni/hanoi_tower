@@ -3,6 +3,8 @@ import heapq
 import json
 import itertools
 import logging
+import time
+import tracemalloc
 
 logging.basicConfig(
     filename="logs/hanoi_solver.log",
@@ -15,7 +17,7 @@ logger = logging.getLogger(__name__)
 counter = itertools.count()
 
 
-def my_search_algorithms(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
+def a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
     """
     A* search algorithm for the Tower of Hanoi problem. 
     Profe segui pseudocódigo para este algoritmo, A* es un algoritmo que ya he usado en el pasado,
@@ -26,19 +28,23 @@ def my_search_algorithms(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
     """
 
     abierta = []
-    costo = problem.path_cost(problem.initial, problem.actions(problem.initial)[
-                              0]) + hanoi_heuristic(problem.initial, problem.goal)
-    movimientos_iniciales = []
-    heapq.heappush(abierta, (costo, next(counter),
-                   problem.initial, movimientos_iniciales))
+    movimientos = []
+    g_inicial = problem.path_cost(
+        problem.initial, problem.actions(problem.initial)[0])
+    h_inicial = hanoi_heuristic(problem.initial, problem.goal)
+    f_inicial = g_inicial + h_inicial
+    heapq.heappush(abierta, (f_inicial, next(counter),
+                   problem.initial))
     cerrada = set()
-
+    mejores_costos = {problem.initial: f_inicial}
     while abierta:
-        costo, _, actual, movimientos = heapq.heappop(abierta)
-        logger.info(f"Evaluating state: {actual}")
-        logger.info(f"Current cost: {costo}")
+
+        f, _, actual = heapq.heappop(abierta)
+
         if actual == problem.goal:
-            return actual, movimientos
+            return actual, movimientos, abierta
+        if actual in cerrada:
+            continue
         cerrada.add(actual)
 
         for accion in problem.actions(actual):
@@ -48,15 +54,55 @@ def my_search_algorithms(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
                 "peg_start": accion.rod_input+1,
                 "peg_end": accion.rod_out+1,
             }
-            logger.info(f"Evaluating action: {accion}")
             nuevo_estado = problem.result(actual, accion)
-            nuevos_movimientos = movimientos + [nuevo_movimiento]
+            movimientos.append(nuevo_movimiento)
+            nuevo_g = problem.path_cost(actual, accion)
+            nuevo_h = hanoi_heuristic(nuevo_estado, goal_state=problem.goal)
+            nuevo_f = nuevo_g + nuevo_h
+            if nuevo_estado not in mejores_costos or nuevo_g < mejores_costos[nuevo_estado]:
+                mejores_costos[nuevo_estado] = nuevo_g
+                heapq.heappush(abierta, (nuevo_f, next(counter),
+                               nuevo_estado))
+    return None, []
+
+
+def basic_a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
+    abierta = []
+    movimientos = []
+    g_inicial = problem.path_cost(
+        problem.initial, problem.actions(problem.initial)[0])
+    h_inicial = hanoi_heuristic(problem.initial, problem.goal)
+    f_inicial = g_inicial + h_inicial
+
+    heapq.heappush(abierta, (f_inicial, next(counter),
+                   problem.initial))
+    cerrada = set()
+
+    while abierta:
+        f, _, actual = heapq.heappop(abierta)
+
+        if actual == problem.goal:
+            return actual, movimientos, abierta
+        cerrada.add(actual)
+
+        for accion in problem.actions(actual):
+            nuevo_estado = problem.result(actual, accion)
+            nuevo_movimiento = {
+                "type": "movement",
+                "disk": accion.disk,
+                "peg_start": accion.rod_input+1,
+                "peg_end": accion.rod_out+1,
+            }
+            movimientos.append(nuevo_movimiento)
+            nuevo_g = problem.path_cost(actual, accion)
+            nuevo_h = hanoi_heuristic(nuevo_estado, problem.goal)
+            nuevo_f = nuevo_g + nuevo_h
 
             if nuevo_estado not in cerrada:
-                costo = problem.path_cost(
-                    actual, accion) + hanoi_heuristic(nuevo_estado, goal_state=problem.goal)
-                heapq.heappush(abierta, (costo, next(counter),
-                               nuevo_estado, nuevos_movimientos))
+                heapq.heappush(abierta, (nuevo_f, next(counter),
+                               nuevo_estado))
+
+    return None, []
 
 
 def hanoi_heuristic(current_state: StatesHanoi, goal_state: StatesHanoi) -> int:
@@ -128,16 +174,33 @@ def define_problem() -> ProblemHanoi:
         return None
     goal_state = StatesHanoi(peg_1, peg_2, peg_3, max_disks=5)
 
-
     problem = ProblemHanoi(initial=initial_state, goal=goal_state)
     return problem
 
 
 def run_search(problem: ProblemHanoi, algorithm):
     logger.info(f"Running search algorithm: {algorithm.__name__}")
-    solution, movimientos = algorithm(problem)
+    tracemalloc.start()  # Start measuring memory
+    start_time = time.perf_counter()  # High-resolution timer
+    solution, movimientos, abierta = algorithm(problem)
+    end_time = time.perf_counter()
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()  # Stop measuring memory
+    logger.info(f"Execution time: {end_time - start_time:.6f} seconds")
+    logger.info(f"Peak memory usage: {peak / 1024:.2f} KB")
     with open("simulator/sequence.json", "w") as f:
         json.dump(movimientos, f, indent=4)
+    abierta_serializable = []
+    for f_val, count, estado in abierta:
+        abierta_serializable.append({
+            "f": f_val,
+            "count": count,
+            "estado": estado.__str__(),
+            "movimientos": movimientos
+        })
+
+    with open(f"simulator/queue_{algorithm.__name__}.json", "w") as f:
+        json.dump(abierta_serializable, f, indent=4)
     if solution:
         logger.info(f"Solution found: {solution}")
         logger.info(f"Solution found using {algorithm.__name__}")
@@ -158,5 +221,8 @@ if __name__ == '__main__':
     logger.info(f"Initial state:\n{problem.initial}")
     logger.info(f"Goal state:\n{problem.goal}")
     logger.info("Running search algorithm")
-    logger.info(f"Algorithm: {my_search_algorithms.__name__}")
-    run_search(problem, my_search_algorithms)
+    logger.info(f"Algorithm: {basic_a_star.__name__}")
+    run_search(problem,  basic_a_star)
+    logger.info(f"Algorithm: {a_star.__name__}")
+    run_search(problem, a_star)
+    logger.info("Tower of Hanoi solver finished")
