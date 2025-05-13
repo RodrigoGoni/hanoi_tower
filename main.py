@@ -1,4 +1,4 @@
-from aima_libs.hanoi_states import ProblemHanoi, StatesHanoi
+from aima_libs.hanoi_states import ProblemHanoi, StatesHanoi, ActionHanoi
 import heapq
 import json
 import itertools
@@ -17,9 +17,22 @@ logger = logging.getLogger(__name__)
 counter = itertools.count()
 
 
+def calc_f(problem: ProblemHanoi, accion: ActionHanoi, estado_actual: StatesHanoi, nuevo_estado: StatesHanoi) -> tuple:
+    """
+    Calculate the f value for the A* algorithm.
+    :param estado: The current state of the Tower of Hanoi.
+    :param accion: The action taken to reach the current state.
+    :param inicial: The initial state of the Tower of Hanoi.
+    :return: The f value.
+    """
+    g = problem.path_cost(estado_actual, accion)
+    h = hanoi_heuristic(nuevo_estado, problem.goal)
+    return g, h, g + h
+
+
 def a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
     """
-    A* search algorithm for the Tower of Hanoi problem. 
+    A* search algorithm for the Tower of Hanoi problem.
     Profe segui pseudocódigo para este algoritmo, A* es un algoritmo que ya he usado en el pasado,
     para el path planning en robotica. Para la implementacion de este algoritmo, tuve activado el
     copilot.
@@ -28,25 +41,22 @@ def a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
     """
 
     abierta = []
-    movimientos = []
-    g_inicial = problem.path_cost(
-        problem.initial, problem.actions(problem.initial)[0])
-    h_inicial = hanoi_heuristic(problem.initial, problem.goal)
-    f_inicial = g_inicial + h_inicial
-    heapq.heappush(abierta, (f_inicial, next(counter),
+    movimientos_previos = []
+    g_inicial, _, f_inicial = calc_f(problem, problem.actions(problem.initial)
+                                     [0], problem.initial, problem.initial)
+    heapq.heappush(abierta, (f_inicial, next(counter), movimientos_previos,
                    problem.initial))
     cerrada = set()
-    mejores_costos = {problem.initial: f_inicial}
+    mejores_costos = {problem.initial: g_inicial}
     while abierta:
 
-        f, _, actual = heapq.heappop(abierta)
+        f, _, movimientos_previos, actual = heapq.heappop(abierta)
 
         if actual == problem.goal:
-            return actual, movimientos, abierta
+            return actual, movimientos_previos, abierta, cerrada
         if actual in cerrada:
             continue
         cerrada.add(actual)
-
         for accion in problem.actions(actual):
             nuevo_movimiento = {
                 "type": "movement",
@@ -55,36 +65,32 @@ def a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
                 "peg_end": accion.rod_out+1,
             }
             nuevo_estado = problem.result(actual, accion)
-            movimientos.append(nuevo_movimiento)
-            nuevo_g = problem.path_cost(actual, accion)
-            nuevo_h = hanoi_heuristic(nuevo_estado, goal_state=problem.goal)
-            nuevo_f = nuevo_g + nuevo_h
+            nuevo_g, nuevo_h, nuevo_f = calc_f(
+                problem, accion, actual, nuevo_estado)
             if nuevo_estado not in mejores_costos or nuevo_g < mejores_costos[nuevo_estado]:
                 mejores_costos[nuevo_estado] = nuevo_g
-                heapq.heappush(abierta, (nuevo_f, next(counter),
+                heapq.heappush(abierta, (nuevo_f, next(counter), movimientos_previos + [nuevo_movimiento],
                                nuevo_estado))
     return None, []
 
 
 def basic_a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
     abierta = []
-    movimientos = []
-    g_inicial = problem.path_cost(
-        problem.initial, problem.actions(problem.initial)[0])
-    h_inicial = hanoi_heuristic(problem.initial, problem.goal)
-    f_inicial = g_inicial + h_inicial
-
-    heapq.heappush(abierta, (f_inicial, next(counter),
+    movimientos_previos = []
+    g_inicial, _, f_inicial = calc_f(problem, problem.actions(problem.initial)
+                                     [0], problem.initial, problem.initial)
+    heapq.heappush(abierta, (f_inicial, next(counter), movimientos_previos,
                    problem.initial))
     cerrada = set()
-
     while abierta:
-        f, _, actual = heapq.heappop(abierta)
+        f, _, movimientos_previos, actual = heapq.heappop(abierta)
 
         if actual == problem.goal:
-            return actual, movimientos, abierta
-        cerrada.add(actual)
+            return actual, movimientos_previos, abierta, cerrada
 
+        if actual in cerrada:
+            continue
+        cerrada.add(actual)
         for accion in problem.actions(actual):
             nuevo_estado = problem.result(actual, accion)
             nuevo_movimiento = {
@@ -93,13 +99,10 @@ def basic_a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
                 "peg_start": accion.rod_input+1,
                 "peg_end": accion.rod_out+1,
             }
-            movimientos.append(nuevo_movimiento)
-            nuevo_g = problem.path_cost(actual, accion)
-            nuevo_h = hanoi_heuristic(nuevo_estado, problem.goal)
-            nuevo_f = nuevo_g + nuevo_h
-
+            _, _, nuevo_f = calc_f(
+                problem, accion, actual, nuevo_estado)
             if nuevo_estado not in cerrada:
-                heapq.heappush(abierta, (nuevo_f, next(counter),
+                heapq.heappush(abierta, (nuevo_f, next(counter), movimientos_previos + [nuevo_movimiento],
                                nuevo_estado))
 
     return None, []
@@ -182,26 +185,28 @@ def run_search(problem: ProblemHanoi, algorithm):
     logger.info(f"Running search algorithm: {algorithm.__name__}")
     tracemalloc.start()  # Start measuring memory
     start_time = time.perf_counter()  # High-resolution timer
-    solution, movimientos, abierta = algorithm(problem)
+    solution, movimientos, abierta, exploration = algorithm(problem)
     end_time = time.perf_counter()
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()  # Stop measuring memory
     logger.info(f"Execution time: {end_time - start_time:.6f} seconds")
     logger.info(f"Peak memory usage: {peak / 1024:.2f} KB")
-    with open("simulator/sequence.json", "w") as f:
+    with open(f"simulator/sequence{algorithm.__name__}.json", "w") as f:
         json.dump(movimientos, f, indent=4)
     abierta_serializable = []
-    for f_val, count, estado in abierta:
+    for f_val, count, _, estado in abierta:
         abierta_serializable.append({
             "f": f_val,
             "count": count,
             "estado": estado.__str__(),
-            "movimientos": movimientos
         })
 
     with open(f"simulator/queue_{algorithm.__name__}.json", "w") as f:
         json.dump(abierta_serializable, f, indent=4)
     if solution:
+        logger.info(f"Cantidad de nodos abiertos: {len(abierta)}")
+        logger.info(f"Cantidad de nodos movimientos: {len(movimientos)}")
+        logger.info(f"Cantidad de nodos explorados: {len(exploration)}")
         logger.info(f"Solution found: {solution}")
         logger.info(f"Solution found using {algorithm.__name__}")
         logger.info(f"Initial state:\n{problem.initial}")

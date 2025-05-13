@@ -1,6 +1,7 @@
 import json
 import pygame
 import sys
+import argparse  # <- Import argparse
 
 # Importing custom modules
 import animator
@@ -12,6 +13,21 @@ from constants import *
 
 
 # ----------------------------------------------
+# Argument Parsing
+# ----------------------------------------------
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Hanoi Tower Simulation")
+    parser.add_argument(
+        "--sequence",
+        type=str,
+        default="./sequence.json",
+        help="Path to the sequence JSON file"
+    )
+    return parser.parse_args()
+
+
+# ----------------------------------------------
 # Sequence Loading
 # ----------------------------------------------
 
@@ -19,15 +35,6 @@ from constants import *
 def load_configuration(file_path):
     with open(file_path, "r") as json_file:
         return json.load(json_file)
-
-
-# Load initial and sequence states
-initial_state = load_configuration("./initial_state.json")
-sequence = load_configuration("./sequence.json")
-
-# These two variables are important for the animator and the sequencer
-number_of_disks = sprites.obtain_number_of_disks(initial_state)
-disk_height = sprites.obtain_disks_height(number_of_disks)
 
 
 # ----------------------------------------------
@@ -42,23 +49,34 @@ def initialize_pygame():
 
 # Main game loop
 def main():
+    # Parse command-line arguments
+    args = parse_arguments()
+
+    # Load initial and sequence states
+    initial_state = load_configuration("./initial_state.json")
+    sequence = load_configuration(args.sequence)
+
+    # These two variables are important for the animator and the sequencer
+    number_of_disks = sprites.obtain_number_of_disks(initial_state)
+    disk_height = sprites.obtain_disks_height(number_of_disks)
+
     # Initialize Pygame
     screen = initialize_pygame()
     clock = pygame.time.Clock()
     pygame.display.set_caption("Hanoi's tower simulation")
 
-    # Initialize the logic (registers how many disks are in each peg and the height of the tower per each peg)
+    # Initialize the logic
     hanoi_base = logic.initialize_logic(initial_state, disk_height)
 
     # Initialize the disk sprites
     disks_sprites_groups = pygame.sprite.Group()
-    disks_sprites = sprites.create_sprites(number_of_disks, disk_height, hanoi_base, initial_state)
+    disks_sprites = sprites.create_sprites(
+        number_of_disks, disk_height, hanoi_base, initial_state)
     for disk_id in disks_sprites:
         disks_sprites_groups.add(disks_sprites[disk_id])
 
-    # Initiate the synchronizer
+    # Initiate the synchronizer and animator
     sync_manager = synchronizer.Synchronizer(sequence)
-    # Initiate the animator
     anim_manager = animator.Animator(hanoi_base, disk_height)
 
     # Flag to execute the next sequence
@@ -67,23 +85,17 @@ def main():
     while True:  # Sequence Loop
         handle_events()  # Handle Pygame events
 
-        # Synchronize
         if flag_execute_next_seq:
-            seq = sync_manager.update()  # Get the next sequence from the synchronizer
-            anim_manager.get_sequence(seq)  # Pass the sequence to the animator
+            seq = sync_manager.update()
+            anim_manager.get_sequence(seq)
 
-        # Animation
-        anim_manager.animate(disks_sprites)  # Animate the disks
-        disks_sprites_groups.update()  # Update the disk sprites
-        flag_execute_next_seq = anim_manager.ask_new_seq  # Check if there's a new sequence to execute
+        anim_manager.animate(disks_sprites)
+        disks_sprites_groups.update()
+        flag_execute_next_seq = anim_manager.ask_new_seq
 
-        # Draw all elements
-        background.draw_background(screen)  # Draw the background
-        disks_sprites_groups.draw(screen)  # Draw the disk sprites
-
-        pygame.display.flip()  # Update the display
-
-        # Limit the FPS by sleeping for the remainder of the frame time
+        background.draw_background(screen)
+        disks_sprites_groups.draw(screen)
+        pygame.display.flip()
         clock.tick(FPS)
 
 
@@ -95,6 +107,6 @@ def handle_events():
             sys.exit()
 
 
-# -----------
+# Entry point
 if __name__ == "__main__":
     main()
