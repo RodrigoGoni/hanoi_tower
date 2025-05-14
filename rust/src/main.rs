@@ -35,17 +35,17 @@ fn main() {
 
     let duration = start.elapsed();
 
-    println!("⏱️ A* search took {:.4} seconds", duration.as_secs_f64());
+    println!("A* search took {:.4} seconds", duration.as_secs_f64());
 
     match result {
         Some(solution_node) => {
             println!(
-                "✅ Solution found in {} moves.",
+                "Solution found in {} moves.",
                 solution_node.solution().len()
             );
         }
         None => {
-            println!("❌ No solution found.");
+            println!(" No solution found.");
         }
     }
 }

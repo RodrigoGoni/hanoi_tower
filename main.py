@@ -138,7 +138,7 @@ def hanoi_heuristic_2(current_state: StatesHanoi, goal_state: StatesHanoi) -> in
             if depth > 0 and rod[depth - 1] < disk:
                 disorder_penalty += 1
 
-    return misplaced_penalty + 2 * disorder_penalty
+    return misplaced_penalty + disorder_penalty
 
 
 def hanoi_heuristic(current_state: StatesHanoi, goal_state: StatesHanoi) -> int:
