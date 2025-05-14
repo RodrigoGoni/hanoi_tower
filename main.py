@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 counter = itertools.count()
 
 
-def calc_f(problem: ProblemHanoi, accion: ActionHanoi, estado_actual: StatesHanoi, nuevo_estado: StatesHanoi) -> tuple:
+def calc_f(problem: ProblemHanoi, accion: ActionHanoi, estado_actual: StatesHanoi, nuevo_estado: StatesHanoi, heuristic) -> tuple:
     """
     Calculate the f value for the A* algorithm.
     :param estado: The current state of the Tower of Hanoi.
@@ -26,11 +26,11 @@ def calc_f(problem: ProblemHanoi, accion: ActionHanoi, estado_actual: StatesHano
     :return: The f value.
     """
     g = problem.path_cost(estado_actual, accion)
-    h = hanoi_heuristic(nuevo_estado, problem.goal)
+    h = heuristic(nuevo_estado, problem.goal)
     return g, h, g + h
 
 
-def a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
+def a_star(problem: ProblemHanoi, heuristic) -> tuple[StatesHanoi, list]:
     """
     A* search algorithm for the Tower of Hanoi problem.
     Profe segui pseudocódigo para este algoritmo, A* es un algoritmo que ya he usado en el pasado,
@@ -43,7 +43,7 @@ def a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
     abierta = []
     movimientos_previos = []
     g_inicial, _, f_inicial = calc_f(problem, problem.actions(problem.initial)
-                                     [0], problem.initial, problem.initial)
+                                     [0], problem.initial, problem.initial, heuristic)
     heapq.heappush(abierta, (f_inicial, next(counter), movimientos_previos,
                    problem.initial))
     cerrada = set()
@@ -66,7 +66,7 @@ def a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
             }
             nuevo_estado = problem.result(actual, accion)
             nuevo_g, nuevo_h, nuevo_f = calc_f(
-                problem, accion, actual, nuevo_estado)
+                problem, accion, actual, nuevo_estado, heuristic)
             if nuevo_estado not in mejores_costos or nuevo_g < mejores_costos[nuevo_estado]:
                 mejores_costos[nuevo_estado] = nuevo_g
                 heapq.heappush(abierta, (nuevo_f, next(counter), movimientos_previos + [nuevo_movimiento],
@@ -74,11 +74,11 @@ def a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
     return None, []
 
 
-def basic_a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
+def basic_a_star(problem: ProblemHanoi, heuristic) -> tuple[StatesHanoi, list]:
     abierta = []
     movimientos_previos = []
     g_inicial, _, f_inicial = calc_f(problem, problem.actions(problem.initial)
-                                     [0], problem.initial, problem.initial)
+                                     [0], problem.initial, problem.initial, heuristic)
     heapq.heappush(abierta, (f_inicial, next(counter), movimientos_previos,
                    problem.initial))
     cerrada = set()
@@ -100,12 +100,45 @@ def basic_a_star(problem: ProblemHanoi) -> tuple[StatesHanoi, list]:
                 "peg_end": accion.rod_out+1,
             }
             _, _, nuevo_f = calc_f(
-                problem, accion, actual, nuevo_estado)
+                problem, accion, actual, nuevo_estado, heuristic)
             if nuevo_estado not in cerrada:
                 heapq.heappush(abierta, (nuevo_f, next(counter), movimientos_previos + [nuevo_movimiento],
                                nuevo_estado))
 
     return None, []
+
+
+def hanoi_heuristic_2(current_state: StatesHanoi, goal_state: StatesHanoi) -> int:
+    """
+    Improved heuristic for the Tower of Hanoi.
+    This heuristic considers:
+    - Disks not in the correct rod.
+    - Disks out of order (a larger disk above a smaller one).
+    """
+    current_rods = current_state.get_state()
+    goal_rods = goal_state.get_state()
+    total_disks = current_state.number_of_disks
+
+    misplaced_penalty = 0
+    disorder_penalty = 0
+
+    # Build a mapping from disk -> correct rod (goal position)
+    disk_goal_rod = {}
+    for rod_index, rod in enumerate(goal_rods):
+        for disk in rod:
+            disk_goal_rod[disk] = rod_index
+
+    for rod_index, rod in enumerate(current_rods):
+        for depth, disk in enumerate(rod):
+            # 1. Penalize if disk is not on its goal rod
+            if disk_goal_rod[disk] != rod_index:
+                misplaced_penalty += 1
+
+            # 2. Penalize if any disk above this one is smaller (invalid state)
+            if depth > 0 and rod[depth - 1] < disk:
+                disorder_penalty += 1
+
+    return misplaced_penalty + 2 * disorder_penalty
 
 
 def hanoi_heuristic(current_state: StatesHanoi, goal_state: StatesHanoi) -> int:
@@ -181,11 +214,15 @@ def define_problem() -> ProblemHanoi:
     return problem
 
 
-def run_search(problem: ProblemHanoi, algorithm):
+def run_search(problem: ProblemHanoi, algorithm, heuristic) -> None:
+    logger.info(
+        "#################### Starting search algorithm ####################")
     logger.info(f"Running search algorithm: {algorithm.__name__}")
+    logger.info(f"Initial state:\n{problem.initial}")
+    logger.info(f"Goal state:\n{problem.goal}")
     tracemalloc.start()  # Start measuring memory
     start_time = time.perf_counter()  # High-resolution timer
-    solution, movimientos, abierta, exploration = algorithm(problem)
+    solution, movimientos, abierta, exploration = algorithm(problem, heuristic)
     end_time = time.perf_counter()
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()  # Stop measuring memory
@@ -206,12 +243,14 @@ def run_search(problem: ProblemHanoi, algorithm):
     if solution:
         logger.info(f"Cantidad de nodos abiertos: {len(abierta)}")
         logger.info(f"Cantidad de nodos movimientos: {len(movimientos)}")
-        logger.info(f"Cantidad de nodos explorados: {len(exploration)}")
+        logger.info(f"Cantidad de nodos cerrados: {len(exploration)}")
+        optimal_moves = 2**problem.initial.number_of_disks - 1
+        logger.info(f"Solicion optima es 2^n - 1 = {optimal_moves}")
+        if len(movimientos) == optimal_moves:
+            logger.info("Solution is optimal")
+        else:
+            logger.info("Solution is not optimal")
         logger.info(f"Solution found: {solution}")
-        logger.info(f"Solution found using {algorithm.__name__}")
-        logger.info(f"Initial state:\n{problem.initial}")
-        logger.info(f"Goal state:\n{problem.goal}")
-        logger.info(f"Solution state:\n{solution}")
 
     else:
         logger.info(f"❌ No solution found using {algorithm.__name__}")
@@ -223,11 +262,8 @@ if __name__ == '__main__':
         print("Invalid initial state. Exiting.")
         exit(1)
     logger.info("Starting Tower of Hanoi solver")
-    logger.info(f"Initial state:\n{problem.initial}")
-    logger.info(f"Goal state:\n{problem.goal}")
-    logger.info("Running search algorithm")
-    logger.info(f"Algorithm: {basic_a_star.__name__}")
-    run_search(problem,  basic_a_star)
-    logger.info(f"Algorithm: {a_star.__name__}")
-    run_search(problem, a_star)
-    logger.info("Tower of Hanoi solver finished")
+
+    run_search(problem,  basic_a_star, heuristic=hanoi_heuristic)
+    run_search(problem, basic_a_star, heuristic=hanoi_heuristic_2)
+    run_search(problem, a_star, heuristic=hanoi_heuristic)
+    run_search(problem, a_star, heuristic=hanoi_heuristic_2)
