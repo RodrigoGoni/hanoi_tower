@@ -1,92 +1,107 @@
 [
     {
         "f": 32.0,
-        "count": 240,
-        "estado": "HanoiState: 3 1 | 5 4 | 2"
-    },
-    {
-        "f": 32.0,
-        "count": 241,
-        "estado": "HanoiState: 3 | 5 4 | 2 1"
-    },
-    {
-        "f": 32.0,
-        "count": 245,
-        "estado": "HanoiState: 4 | 5 3 | 2 1"
-    },
-    {
-        "f": 32.0,
-        "count": 242,
-        "estado": "HanoiState: 3 1 | 5 4 2 | "
-    },
-    {
-        "f": 32.0,
-        "count": 243,
-        "estado": "HanoiState: 3 | 5 4 2 1 | "
-    },
-    {
-        "f": 32.0,
-        "count": 252,
-        "estado": "HanoiState: 4 2 1 | 3 | 5"
-    },
-    {
-        "f": 32.0,
-        "count": 249,
+        "count": 503,
         "estado": "HanoiState: 4 3 | 2 1 | 5"
     },
     {
         "f": 32.0,
-        "count": 244,
-        "estado": "HanoiState: 4 | 5 3 1 | 2"
+        "count": 505,
+        "estado": "HanoiState: 3 1 | 5 4 2 | "
     },
     {
         "f": 32.0,
-        "count": 248,
-        "estado": "HanoiState: 4 | 2 | 5 3 1"
+        "count": 504,
+        "estado": "HanoiState: 4 2 1 | 3 | 5"
     },
     {
         "f": 32.0,
-        "count": 253,
-        "estado": "HanoiState: 1 | 3 | 5 4 2"
+        "count": 506,
+        "estado": "HanoiState: 3 | 5 4 2 1 | "
     },
     {
         "f": 32.0,
-        "count": 247,
+        "count": 508,
         "estado": "HanoiState: 4 2 | 5 3 1 | "
     },
     {
         "f": 32.0,
-        "count": 254,
-        "estado": "HanoiState:  | 3 1 | 5 4 2"
-    },
-    {
-        "f": 32.0,
-        "count": 257,
-        "estado": "HanoiState: 2 |  | 5 4 3 1"
-    },
-    {
-        "f": 32.0,
-        "count": 251,
-        "estado": "HanoiState: 4 2 |  | 5 3 1"
-    },
-    {
-        "f": 32.0,
-        "count": 250,
-        "estado": "HanoiState: 4 2 |  | 5 3 1"
-    },
-    {
-        "f": 32.0,
-        "count": 246,
+        "count": 507,
         "estado": "HanoiState: 4 2 1 | 5 3 | "
     },
     {
-        "f": 32.0,
-        "count": 255,
-        "estado": "HanoiState:  | 2 | 5 4 3 1"
+        "f": 33.0,
+        "count": 523,
+        "estado": "HanoiState: 2 | 3 1 | 5 4"
     },
     {
         "f": 32.0,
-        "count": 258,
+        "count": 516,
+        "estado": "HanoiState: 1 | 2 | 5 4 3"
+    },
+    {
+        "f": 33.0,
+        "count": 526,
+        "estado": "HanoiState: 4 2 | 5 3 1 | "
+    },
+    {
+        "f": 32.0,
+        "count": 533,
         "estado": "HanoiState:  | 1 | 5 4 3 2"
+    },
+    {
+        "f": 32.0,
+        "count": 521,
+        "estado": "HanoiState:  | 3 1 | 5 4 2"
+    },
+    {
+        "f": 33.0,
+        "count": 522,
+        "estado": "HanoiState: 1 | 3 2 | 5 4"
+    },
+    {
+        "f": 32.0,
+        "count": 520,
+        "estado": "HanoiState: 4 | 5 3 1 | 2"
+    },
+    {
+        "f": 33.0,
+        "count": 528,
+        "estado": "HanoiState: 2 | 1 | 5 4 3"
+    },
+    {
+        "f": 33.0,
+        "count": 532,
+        "estado": "HanoiState: 4 3 | 5 1 | 2"
+    },
+    {
+        "f": 32.0,
+        "count": 518,
+        "estado": "HanoiState: 3 1 | 5 4 | 2"
+    },
+    {
+        "f": 33.0,
+        "count": 530,
+        "estado": "HanoiState:  | 5 4 3 1 | 2"
+    },
+    {
+        "f": 33.0,
+        "count": 527,
+        "estado": "HanoiState: 2 1 |  | 5 4 3"
+    },
+    {
+        "f": 33.0,
+        "count": 529,
+        "estado": "HanoiState: 1 | 5 4 3 | 2"
+    },
+    {
+        "f": 33.0,
+        "count": 531,
+        "estado": "HanoiState: 4 3 1 | 5 | 2"
+    },
+    {
+        "f": 33.0,
+        "count": 525,
+        "estado": "HanoiState: 3 1 | 5 4 2 | "
     }
 ]

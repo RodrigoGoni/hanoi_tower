@@ -172,3 +172,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+simulator/queue_basic_a_star.json
+simulator/queue_a_star.json
