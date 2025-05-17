@@ -110,6 +110,10 @@ Se implementaron las siguientes variantes del algoritmo A*:
 
 En todos los casos, los algoritmos implementados encontraron la **solución óptima** de `2^k − 1` movimientos, siendo `k` el número de discos. Esto se validó en 20 ejecuciones por algoritmo y heurística.
 
+## Evaluación de la calidad de la solución
+
+A modo de experimentacion se desarrollo el codigo en Rust. El mismo sigue las estructuras de datos del codigo de ejemplo en python y se aplica en este caso en particular solo el algoritmo A* a modo de ejemplo. Se dispone del codigo fuente, o bien el ejecutable compilado. 
+
 ---
 
 ## Entregables
