@@ -116,8 +116,7 @@ En todos los casos, los algoritmos implementados encontraron la **solución ópt
 
 - Código fuente del proyecto
 - Archivo `README.md` con documentación teórica
-- Archivos `.json` para el simulador son simulator/initial_state.json, simulator/goal_state.json, simulator/sequencea_star.json, simulator/queue_basic_a_star.json, se generan desdpues de cada ejecucion
-
+- Archivos `.json` para el simulador son simulator/initial_state.json, simulator/goal_state.json, simulator/sequencea_star.json, simulator/queue_basic_a_star.json, se generan desdpues de cada ejecucion. ademas agregue un parametro --sequence para pasarle la ruta al archvio
 ---
 
 ## Consideraciones
